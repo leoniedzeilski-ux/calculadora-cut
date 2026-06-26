@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Cut — Recomposição Baseada em Ciência</title>
+<style>
+  :root{
+    --navy:#002060; --gold:#C9A227; --bg:#FAFAF7; --ink:#1a1a1a;
+    --green:#375623; --red:#C00000; --line:#e2e0d8; --muted:#6b6b6b;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Helvetica Neue',Arial,sans-serif; background:var(--bg); color:var(--ink);
+    line-height:1.55; font-size:16px; -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:780px;margin:0 auto;padding:0 18px}
+  header{background:var(--navy);color:#fff;padding:26px 0 22px;margin-bottom:24px}
+  header .wrap{display:block}
+  .eyebrow{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:6px}
+  h1{font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.1;font-weight:700;letter-spacing:-0.5px}
+  header p{color:#c9cede;font-size:14px;margin-top:8px;max-width:560px}
+  h2{font-family:Georgia,serif;color:var(--navy);font-size:21px;margin:30px 0 4px;padding-bottom:7px;border-bottom:2px solid var(--gold)}
+  h3{font-size:15px;color:var(--navy);font-weight:700;margin:18px 0 8px;text-transform:uppercase;letter-spacing:0.5px}
+  label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:12px 0 4px}
+  .hint{font-size:12px;color:var(--muted);font-weight:400;margin-top:2px}
+  input,select{
+    width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:7px;
+    font-size:16px;background:#fff;color:var(--ink);font-family:inherit;
+  }
+  input:focus,select:focus{outline:none;border-color:var(--navy)}
+  .row{display:flex;gap:12px}
+  .row>div{flex:1}
+  .branch{display:none;border-left:3px solid var(--gold);padding-left:14px;margin-top:8px;background:#fdfbf3;border-radius:0 6px 6px 0;padding:10px 14px}
+  .branch.show{display:block}
+  button{
+    font-family:inherit;cursor:pointer;border:none;border-radius:8px;font-weight:700;
+  }
+  .btn-primary{background:var(--navy);color:#fff;font-size:17px;padding:15px 22px;width:100%;margin-top:24px;letter-spacing:0.3px}
+  .btn-primary:active{background:#001640}
+  .btn-ghost{background:transparent;color:var(--navy);border:1.5px solid var(--navy);font-size:14px;padding:11px 18px}
+  .btn-print{background:var(--gold);color:#3a2e00;font-size:15px;padding:13px 22px}
+  /* result */
+  #result{display:none;margin-top:10px}
+  .tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;color:#fff;vertical-align:middle;letter-spacing:0.5px}
+  .t-certo{background:var(--green)} .t-prov{background:var(--gold);color:#3a2e00} .t-sup{background:#888}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:16px 0}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .kpi .lab{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+  .kpi .val{font-family:Georgia,serif;font-size:27px;color:var(--navy);font-weight:700;margin-top:3px}
+  .kpi .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .macro-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}
+  .macro{text-align:center;border-radius:10px;padding:14px 8px;color:#fff}
+  .m-p{background:#1f6f54} .m-c{background:#b5851a} .m-g{background:#7a3b3b}
+  .macro .mn{font-size:12px;text-transform:uppercase;letter-spacing:0.5px;opacity:.9}
+  .macro .mv{font-family:Georgia,serif;font-size:26px;font-weight:700;margin-top:2px}
+  .macro .mk{font-size:11px;opacity:.85;margin-top:2px}
+  .box{border:1px solid var(--line);border-left:4px solid var(--gold);background:#fafaf5;padding:12px 15px;border-radius:0 8px 8px 0;margin:14px 0;font-size:14px}
+  .box.warn{border-left-color:var(--red);background:#fdf4f4}
+  .box.ok{border-left-color:var(--green);background:#f4f8f1}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th{background:var(--navy);color:#fff;padding:7px 9px;text-align:left;font-size:12px}
+  td{border:1px solid var(--line);padding:6px 9px}
+  tr:nth-child(even) td{background:#f7f6f1}
+  .grp{font-weight:700;color:var(--navy);background:#efeada !important}
+  .scenarios{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  .scen{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fff}
+  .scen.rec{border:2px solid var(--green)}
+  .scen h4{font-size:14px;color:var(--navy);margin-bottom:6px}
+  .scen .big{font-family:Georgia,serif;font-size:20px;color:var(--navy);font-weight:700}
+  .badge{display:inline-block;font-size:10px;background:var(--green);color:#fff;padding:1px 7px;border-radius:4px;font-weight:700;margin-left:6px}
+  ul{padding-left:20px;margin:8px 0;font-size:14px} li{margin:5px 0}
+  .actions{display:flex;gap:10px;margin:22px 0;flex-wrap:wrap}
+  .actions button{flex:1;min-width:140px}
+  footer{font-size:12px;color:var(--muted);text-align:center;margin:30px 0 24px;padding-top:14px;border-top:1px solid var(--line)}
+  .disclaimer{font-size:12px;color:var(--muted);background:#f2f0e8;border-radius:8px;padding:12px 14px;margin:16px 0}
+  @media(max-width:560px){.kpis{grid-template-columns:1fr}.scenarios{grid-template-columns:1fr}h1{font-size:25px}}
+  @media print{
+    header{background:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .macro,.kpi,th,.tag,.scen.rec,.box{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    #form-card,.actions,.btn-primary{display:none!important}
+    #result{display:block!important}
+    body{font-size:12px}
+    h2{page-break-after:avoid} table{page-break-inside:auto} tr{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Recomposição corporal · base científica</div>
+    <h1>Calculadora de Cut</h1>
+    <p>Calcula suas calorias, macros e trajetória de perda de gordura preservando músculo. Sem promessas mágicas — só a matemática que a evidência sustenta.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="form-card">
+    <h2>Seus dados</h2>
+
+    <h3>Básico</h3>
+    <div class="row">
+      <div>
+        <label>Sexo</label>
+        <select id="sex"><option value="m">Homem</option><option value="f">Mulher</option></select>
+      </div>
+      <div>
+        <label>Idade</label>
+        <input id="age" type="number" inputmode="numeric" placeholder="ex: 35">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Peso atual (kg)</label>
+        <input id="weight" type="number" inputmode="decimal" placeholder="ex: 85">
+      </div>
+      <div>
+        <label>Altura (cm)</label>
+        <input id="height" type="number" inputmode="numeric" placeholder="ex: 175">
+      </div>
+    </div>
+
+    <h3>Composição corporal</h3>
+    <label>Você tem exame de composição (InBody / DEXA / bioimpedância)?</label>
+    <select id="hasExam">
+      <option value="no">Não tenho</option>
+      <option value="yes">Sim, tenho</option>
+    </select>
+
+    <div class="branch" id="examYes">
+      <label>Massa magra / MLG (kg) <span class="hint">o número de "massa livre de gordura" do exame</span></label>
+      <input id="lbm" type="number" inputmode="decimal" placeholder="ex: 65">
+      <label>% de gordura (se souber)</label>
+      <input id="bfDirect" type="number" inputmode="decimal" placeholder="ex: 20">
+    </div>
+
+    <div class="branch" id="examNo">
+      <p class="hint" style="margin-bottom:6px">Sem exame, estimo sua composição pela circunferência. Meça relaxado, com fita, sem apertar.</p>
+      <div class="row">
+        <div>
+          <label>Cintura (cm) <span class="hint">na altura do umbigo</span></label>
+          <input id="waist" type="number" inputmode="decimal" placeholder="ex: 90">
+        </div>
+        <div>
+          <label>Pescoço (cm)</label>
+          <input id="neck" type="number" inputmode="decimal" placeholder="ex: 38">
+        </div>
+      </div>
+      <div id="hipWrap" style="display:none">
+        <label>Quadril (cm) <span class="hint">parte mais larga</span></label>
+        <input id="hip" type="number" inputmode="decimal" placeholder="ex: 100">
+      </div>
+    </div>
+
+    <h3>Atividade física</h3>
+    <div class="row">
+      <div>
+        <label>Musculação (dias/semana)</label>
+        <input id="lift" type="number" inputmode="numeric" placeholder="ex: 3" value="3">
+      </div>
+      <div>
+        <label>Cardio (dias/semana)</label>
+        <input id="cardio" type="number" inputmode="numeric" placeholder="ex: 3" value="3">
+      </div>
+    </div>
+    <label>Rotina fora do treino</label>
+    <select id="job">
+      <option value="1.3">Sentado a maior parte do dia</option>
+      <option value="1.4">Moderadamente ativo (em pé, caminha)</option>
+      <option value="1.5">Trabalho fisicamente ativo</option>
+    </select>
+
+    <button class="btn-primary" onclick="calc()">Calcular meu plano</button>
+    <div class="disclaimer">
+      Ferramenta educativa. Não substitui avaliação de médico ou nutricionista. Se você tem condição de saúde, toma medicação contínua, está grávida/amamentando, ou tem histórico de transtorno alimentar, consulte um profissional antes de iniciar.
+    </div>
+  </div>
+
+  <div id="result"></div>
+
+  <footer>
+    Calculadora de Cut · base científica (Mifflin-St Jeor, Helms 2014, método Navy) · uso pessoal/educativo
+  </footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+$('hasExam').onchange=function(){
+  $('examYes').classList.toggle('show',this.value==='yes');
+  $('examNo').classList.toggle('show',this.value==='no');
+};
+$('sex').onchange=function(){
+  $('hipWrap').style.display=this.value==='f'?'block':'none';
+};
+// default: show "no exam" branch
+$('examNo').classList.add('show');
+
+function log10(x){return Math.log(x)/Math.LN10;}
+
+function estimateBF(sex,h,waist,neck,hip){
+  // U.S. Navy / Hodgdon-Beckett method, metric (cm)
+  let v=null;
+  if(sex==='m'){
+    if(waist&&neck&&waist>neck){
+      const d=1.0324-0.19077*log10(waist-neck)+0.15456*log10(h);
+      v=495/d-450;
+    }
+  }else{
+    if(waist&&neck&&hip&&(waist+hip>neck)){
+      const d=1.29579-0.35004*log10(waist+hip-neck)+0.22100*log10(h);
+      v=495/d-450;
+    }
+  }
+  return v;
+}
+function clampBF(bf,sex){
+  // physiological bounds; protects against bad circumference inputs
+  const lo=sex==='m'?5:12, hi=sex==='m'?45:55;
+  if(bf===null||isNaN(bf)) return null;
+  return Math.max(lo,Math.min(hi,bf));
+}
+
+function calc(){
+  const sex=$('sex').value;
+  const age=+$('age').value, w=+$('weight').value, h=+$('height').value;
+  if(!age||!w||!h){alert('Preencha sexo, idade, peso e altura para continuar.');return;}
+
+  let lbm=null, bf=null, estimated=false;
+  if($('hasExam').value==='yes'){
+    lbm=+$('lbm').value||null;
+    bf=+$('bfDirect').value||null;
+    if(lbm&&!bf) bf=(1-lbm/w)*100;
+    if(bf&&!lbm) lbm=w*(1-bf/100);
+  }else{
+    const waist=+$('waist').value, neck=+$('neck').value, hip=+$('hip').value;
+    bf=estimateBF(sex,h,waist,neck,hip);
+    if(bf===null){
+      // BMI fallback (Deurenberg)
+      const bmi=w/((h/100)**2);
+      bf=1.20*bmi+0.23*age-10.8*(sex==='m'?1:0)-5.4;
+    }
+    bf=clampBF(bf,sex);
+    if(bf===null){alert('Confira as medidas de circunferência — não foi possível estimar. Para mulheres, o quadril é obrigatório.');return;}
+    lbm=w*(1-bf/100);
+    estimated=true;
+  }
+
+  // BMR Mifflin-St Jeor
+  const S=sex==='m'?5:-161;
+  const bmr=Math.round(10*w+6.25*h-5*age+S);
+
+  // activity factors
+  const lift=+$('lift').value||0, card=+$('cardio').value||0, base=+$('job').value;
+  const f1=Math.min(base+lift*0.05+card*0.04,1.75);
+  const f2=Math.min(base+lift*0.05+(card+3)*0.04,1.85); // scenario 2 = +3 cardio
+  const tdee1=Math.round(bmr*f1), tdee2=Math.round(bmr*f2);
+
+  // macros (science): protein 2.6 g/kg LBM, fat 0.8 g/kg bodyweight, carb fills
+  const protein=Math.round(2.6*lbm);
+  const fat=Math.round(0.8*w);
+  const kcalTarget=Math.round(tdee1-500); // moderate deficit anchored to scenario 1
+  let carb=Math.round((kcalTarget-protein*4-fat*9)/4);
+  if(carb<80){carb=80;} // floor for training fuel
+  const kcalFromMacros=protein*4+carb*4+fat*9;
+
+  // target weight: BF goal
+  const bfGoal=sex==='m'?14:22;
+  let targetW=Math.round(lbm/(1-bfGoal/100)*10)/10;
+  if(targetW>=w) targetW=Math.round((w-1)*10)/10; // already lean: nominal target
+  const lossTotal=Math.max(0,Math.round((w-targetW)*10)/10);
+
+  // deficits & rate
+  const def1=tdee1-kcalFromMacros, def2=tdee2-kcalFromMacros;
+  const wk1=def1*7/7700, wk2=def2*7/7700;
+  const pct1=wk1/w*100, pct2=wk2/w*100;
+  const weeks1=wk1>0?Math.round(lossTotal/wk1):'—', weeks2=wk2>0?Math.round(lossTotal/wk2):'—';
+
+  const proteinPerLbm=(protein/lbm).toFixed(1);
+  const fatPerKg=(fat/w).toFixed(1);
+  const bfNow=bf.toFixed(1);
+
+  const estTag=estimated?'<span class="tag t-sup">Suposição</span>':'<span class="tag t-certo">Medido</span>';
+  const safe1=(pct1>=0.5&&pct1<=0.7);
+  const safe2=(pct2<=0.7);
+
+  $('result').innerHTML=`
+    <h2>Seu plano</h2>
+    <div class="box ${estimated?'warn':'ok'}">
+      ${estTag} ${estimated
+        ? 'Sua composição foi <strong>estimada</strong> por circunferência — é um ponto de partida, não medida exata. Um exame (InBody/DEXA) refina proteína e meta. Tende a errar para mais gordura.'
+        : 'Composição baseada no seu exame. Atualize quando refizer o exame.'}
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="lab">Peso atual</div><div class="val">${w} kg</div><div class="sub">% gordura: ~${bfNow}%</div></div>
+      <div class="kpi"><div class="lab">Massa magra</div><div class="val">${lbm.toFixed(1)} kg</div><div class="sub">base do cálculo de proteína</div></div>
+      <div class="kpi"><div class="lab">Consumo-alvo</div><div class="val">${kcalFromMacros}</div><div class="sub">kcal/dia, todo dia</div></div>
+      <div class="kpi"><div class="lab">Peso-alvo sugerido</div><div class="val">${targetW} kg</div><div class="sub">~${bfGoal}% gordura · ajustável</div></div>
+    </div>
+
+    <h3>Macros diários</h3>
+    <div class="macro-grid">
+      <div class="macro m-p"><div class="mn">Proteína</div><div class="mv">${protein}g</div><div class="mk">${proteinPerLbm} g/kg MLG</div></div>
+      <div class="macro m-c"><div class="mn">Carbo</div><div class="mv">${carb}g</div><div class="mk">combustível de treino</div></div>
+      <div class="macro m-g"><div class="mn">Gordura</div><div class="mv">${fat}g</div><div class="mk">${fatPerKg} g/kg · piso hormonal</div></div>
+    </div>
+    <div class="box"><span class="tag t-certo">Certo</span> A <strong>proteína é a âncora e não cai</strong> conforme você emagrece. Quando precisar reduzir calorias, corte carbo primeiro, gordura depois — proteína nunca.</div>
+
+    <h3>Trajetória até ${targetW} kg <span class="hint">(${lossTotal} kg a perder)</span></h3>
+    <div class="scenarios">
+      <div class="scen rec">
+        <h4>Cenário 1 ${safe1?'<span class="badge">recomendado</span>':''}</h4>
+        <div class="big">~${weeks1} semanas</div>
+        <div class="hint">${lift}× musc + ${card}× cardio<br>déficit ~${def1} kcal/dia · ${pct1.toFixed(2)}%/sem</div>
+      </div>
+      <div class="scen">
+        <h4>Cenário 2 (mais cardio)</h4>
+        <div class="big">~${weeks2} semanas</div>
+        <div class="hint">${lift}× musc + ${card+3}× cardio<br>déficit ~${def2} kcal/dia · ${pct2.toFixed(2)}%/sem</div>
+      </div>
+    </div>
+    <div class="box ${safe2&&pct2>0.7?'warn':''}">
+      <span class="tag t-certo">Certo</span> Taxa segura para preservar músculo: <strong>0,5–0,7%/semana</strong>.
+      ${pct2>0.7?'O Cenário 2 passa do limite — use só por períodos curtos.':'Comece pelo Cenário 1; suba só se a aderência segurar 3 semanas e o progresso travar.'}
+    </div>
+
+    <h3>Distribuição por refeição</h3>
+    <table>
+      <tr><th>Refeição</th><th>P (g)</th><th>C (g)</th><th>G (g)</th></tr>
+      ${mealRows(protein,carb,fat)}
+    </table>
+
+    <h3>Tabela de alimentos <span class="hint">(monte somando até bater os macros)</span></h3>
+    ${foodTable()}
+
+    <div class="box"><span class="tag t-prov">Provável</span> Os fatores de atividade são estimativas (±15%). Depois de 2–3 semanas pesando, um app que ajusta o gasto sozinho (ex: MacroFactor) dá um número mais real que qualquer fórmula.</div>
+
+    <div class="actions">
+      <button class="btn-print" onclick="window.print()">Salvar / imprimir PDF</button>
+      <button class="btn-ghost" onclick="document.getElementById('form-card').style.display='block';document.getElementById('result').style.display='none';window.scrollTo(0,0)">Editar dados</button>
+    </div>
+    <div class="disclaimer">
+      Ferramenta educativa, não prescrição. Não substitui médico ou nutricionista. Procure um profissional se tiver condição de saúde, usar medicação contínua, ou histórico de transtorno alimentar.
+    </div>
+  `;
+  $('form-card').style.display='none';
+  $('result').style.display='block';
+  window.scrollTo(0,0);
+}
+
+function mealRows(p,c,f){
+  // proportional split: breakfast skip option, lunch 38%, pre 12%, dinner 38%, whey 12%
+  const meals=[
+    ['Café (jejum opcional)',0,0,0],
+    ['Almoço',Math.round(p*.30),Math.round(c*.42),Math.round(f*.36)],
+    ['Pré-treino (iogurte proteico/whey)',Math.round(p*.12),Math.round(c*.05),0],
+    ['Jantar',Math.round(p*.34),Math.round(c*.45),Math.round(f*.40)],
+    ['Whey / lacuna',Math.round(p*.24),Math.round(c*.08),Math.round(f*.24)],
+  ];
+  return meals.map(m=>`<tr><td>${m[0]}</td><td>${m[1]}</td><td>${m[2]}</td><td>${m[3]}</td></tr>`).join('');
+}
+
+function foodTable(){
+  const groups={
+    'Proteínas (~25g prot/porção)':[
+      ['Frango (peito)','palma / 100g',31,0,4,165],
+      ['Carne magra','palma / 100g',26,0,7,180],
+      ['Peixe branco','palma / 120g',24,0,2,110],
+      ['Atum (água)','1 lata / 120g',26,0,3,130],
+      ['Ovos','2 un / 100g',13,1,11,145],
+      ['Iogurte proteico','1 pote / 200g',22,8,0,120],
+      ['Whey','1 dose / 30g',24,3,2,130],
+      ['Tofu','fatia / 150g',18,3,8,130],
+    ],
+    'Carboidratos (~30g carb/porção)':[
+      ['Arroz','1 concha / 100g',3,28,0,130],
+      ['Feijão','1 concha / 90g',6,18,1,105],
+      ['Batata inglesa','1 punho / 150g',3,27,0,115],
+      ['Batata doce','1 punho / 130g',2,30,0,130],
+      ['Pão integral','2 fatias / 60g',6,28,2,150],
+      ['Aveia','4 csopa / 40g',5,26,3,150],
+      ['Macarrão integral','1 escumadeira / 100g',5,30,1,160],
+    ],
+    'Gorduras (~10g/porção)':[
+      ['Azeite','1 csopa / 10g',0,0,10,90],
+      ['Abacate','1/4 / 50g',1,2,7,80],
+      ['Castanhas','punho / 15g',3,2,9,95],
+      ['Pasta amendoim','1 csopa / 15g',4,3,8,95],
+      ['Queijo','1 fatia / 30g',6,1,9,110],
+    ],
+    'Vegetais livres (à vontade)':[
+      ['Folhas verdes','à vontade',2,2,0,20],
+      ['Brócolis/couve-flor','à vontade',3,4,0,30],
+      ['Pepino/tomate','à vontade',1,3,0,18],
+      ['Abobrinha/berinjela','à vontade',1,3,0,22],
+    ],
+    'Frutas (1–2/dia)':[
+      ['Banana','1 média',1,23,0,90],
+      ['Maçã/pera','1 un',0,20,0,80],
+      ['Frutas vermelhas','1 xícara',1,12,0,60],
+      ['Laranja','1 un',1,16,0,65],
+    ],
+  };
+  let html='<table><tr><th>Alimento</th><th>Medida</th><th>P</th><th>C</th><th>G</th><th>kcal</th></tr>';
+  for(const g in groups){
+    html+=`<tr><td class="grp" colspan="6">${g}</td></tr>`;
+    html+=groups[g].map(f=>`<tr><td>${f[0]}</td><td>${f[1]}</td><td>${f[2]}</td><td>${f[3]}</td><td>${f[4]}</td><td>${f[5]}</td></tr>`).join('');
+  }
+  return html+'</table>';
+}
+</script>
+</body>
+</html>
